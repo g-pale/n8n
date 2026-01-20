@@ -114,7 +114,25 @@ echo ""
 echo "A3.2) Создание Caddyfile..."
 cat > Caddyfile << CADDYEOF
 $SUBDOMAIN {
+  # Reverse proxy к n8n
   reverse_proxy n8n:5678
+
+  # Удаляем конфликтующие/дублирующиеся security headers от upstream (n8n)
+  # Это важно, чтобы избежать конфликтов и дублирования заголовков
+  header_down -X-Frame-Options
+  header_down -Referrer-Policy
+  header_down -X-Content-Type-Options
+  header_down -X-XSS-Protection
+
+  # Выставляем security headers единожды на уровне Caddy
+  # X-Frame-Options: SAMEORIGIN критически важен для работы iframe в Executions
+  header {
+    X-Frame-Options "SAMEORIGIN"
+    Referrer-Policy "strict-origin-when-cross-origin"
+    X-Content-Type-Options "nosniff"
+    X-XSS-Protection "1; mode=block"
+    Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+  }
 }
 CADDYEOF
 echo "✅ Caddyfile создан"
@@ -124,7 +142,7 @@ echo "A3.3) Создание docker-compose.https.yml..."
 cat > docker-compose.https.yml << COMPOSEEOF
 services:
   caddy:
-    image: caddy:2
+    image: caddy:2.10.2
     container_name: caddy
     restart: unless-stopped
     ports:
@@ -138,7 +156,7 @@ services:
       - n8n_network
 
   n8n:
-    image: n8nio/n8n:latest
+    image: docker.n8n.io/n8nio/n8n:2.3.5
     container_name: n8n
     restart: unless-stopped
     environment:
@@ -175,6 +193,7 @@ volumes:
 
 networks:
   n8n_network:
+    name: n8n_network
     driver: bridge
 COMPOSEEOF
 echo "✅ docker-compose.https.yml создан"

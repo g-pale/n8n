@@ -1,0 +1,26 @@
+# Пример конфигурации Caddy для n8n
+# 
+# Важно: избегайте двух блоков с одинаковым доменом.
+# Этот файл показывает правильную настройку security headers для работы iframe в Executions.
+
+n8n.yourdomain.com {
+  # Reverse proxy к n8n
+  reverse_proxy n8n:5678
+
+  # Удаляем конфликтующие/дублирующиеся security headers от upstream (n8n)
+  # Это важно, чтобы избежать конфликтов и дублирования заголовков
+  header_down -X-Frame-Options
+  header_down -Referrer-Policy
+  header_down -X-Content-Type-Options
+  header_down -X-XSS-Protection
+
+  # Выставляем security headers единожды на уровне Caddy
+  # X-Frame-Options: SAMEORIGIN критически важен для работы iframe в Executions
+  header {
+    X-Frame-Options "SAMEORIGIN"
+    Referrer-Policy "strict-origin-when-cross-origin"
+    X-Content-Type-Options "nosniff"
+    X-XSS-Protection "1; mode=block"
+    Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+  }
+}

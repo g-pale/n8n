@@ -92,3 +92,9 @@ caddy_config/
 local/
 local-*.sh
 *.local.sh
+
+# Архив временных скриптов (для документации, не коммитить)
+archive/
+
+# Временные файлы резюме
+SUMMARY_*.md
